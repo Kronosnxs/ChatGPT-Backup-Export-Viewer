@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<!--
+Project: ChatGPT Backup Export Viewer
+Version: v0.9 — Full-Text Search
+Date: 2025-10-25
+Author: Bob van Zeeland (Kronosnxs)
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ChatGPT Backup Export Viewer — v0.9</title>
+    <style>
+      :root {
+        --bg: #0f1320;
+        --panel: #151a2b;
+        --muted: #8aa1c1;
+        --text: #e6eefc;
+        --accent: #6aa9ff;
+        --accent-2: #7cf4e7;
+        --danger: #ff6a8a;
+        --border: #22304d;
+        --chip: #1b2340;
+        --code-bg: #0a1024;
+        --mark: #264d8b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+          Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        color: var(--text);
+        background: linear-gradient(
+          180deg,
+          #0b0e18 0%,
+          #0f1320 60%,
+          #0b0e18 100%
+        );
+      }
+      .app {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        height: 100vh;
+      }
+      aside {
+        background: var(--panel);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 0;
+        min-height: 100vh;
+      }
+      header {
+        padding: 16px 16px 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      header h1 {
+        margin: 0 0 4px 0;
+        font-size: 16px;
+      }
+      header .sub {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .controls {
+        padding: 12px 16px;
+        display: grid;
+        gap: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        background: linear-gradient(180deg, #1e2642, #16203a);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn:hover {
+        border-color: #2f4475;
+      }
+      input[type="file"] {
+        display: none;
+      }
+      input[type="file"].folder {
+        display: block;
+        width: 0;
+        height: 0;
+        opacity: 0;
+        position: absolute;
+        pointer-events: none;
+      }
+      .chip {
+        border: 1px solid var(--border);
+        background: var(--chip);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .ok {
+        color: #9bf2e1;
+      }
+      .warn {
+        color: #ffd68a;
+      }
+      .danger {
+        color: var(--danger);
+      }
+      .search {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: #0f152b;
+        color: var(--text);
+      }
+      .list {
+        overflow: auto;
+        padding: 8px 8px 24px;
+        flex: 1;
+      }
+      .item {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin: 8px;
+        background: linear-gradient(180deg, #121a33, #0f1630);
+        cursor: pointer;
+      }
+      .item:hover {
+        border-color: #2f4475;
+      }
+      .title {
+        font-weight: 600;
+      }
+      .meta {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      main {
+        padding: 20px 24px;
+        overflow: auto;
+      }
+      .pill {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+      .kbd {
+        background: #0a1024;
+        border: 1px solid var(--border);
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .row-space {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin: 10px 0 18px 0;
+      }
+      .tab {
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        cursor: pointer;
+        background: #0f152b;
+      }
+      .tab.active {
+        outline: 2px solid #2f4475;
+      }
+      .view {
+        display: none;
+      }
+      .view.active {
+        display: block;
+      }
+      .msg {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: #0f162d;
+        margin: 10px 0;
+      }
+      .msg .who {
+        font-weight: 600;
+      }
+      .msg .when {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      pre.code {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        padding: 12px;
+        border-radius: 10px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+      }
+      .copy {
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .empty {
+        color: var(--muted);
+        border: 1px dashed var(--border);
+        padding: 16px;
+        border-radius: 12px;
+        margin-top: 12px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+      }
+      .thumb {
+        max-width: 200px;
+        max-height: 120px;
+        display: block;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        background: #0f162d;
+      }
+      .fname {
+        font-weight: 600;
+      }
+      mark {
+        background: var(--mark);
+        color: #dbe7ff;
+        padding: 0 2px;
+        border-radius: 3px;
+      }
+      .sr-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin: 8px 0 4px;
+      }
+      .sr-count {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .result {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px;
+        margin: 8px 0;
+        background: #101a34;
+        cursor: pointer;
+      }
+      .result h4 {
+        margin: 0 0 6px 0;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside>
+        <header>
+          <h1>ChatGPT Backup Export Viewer</h1>
+          <p class="sub">v0.9 — Full-Text Search</p>
+        </header>
+        <div class="controls">
+          <div class="row">
+            <label class="btn" for="fileJSON">📥 conversation.json</label>
+            <input id="fileJSON" type="file" accept=".json,application/json" />
+            <span id="jsonChip" class="chip"
+              >JSON: <span class="warn">not loaded</span></span
+            >
+          </div>
+          <div class="row">
+            <label class="btn" for="fileHTML">📄 chat.html</label>
+            <input id="fileHTML" type="file" accept=".html,text/html" />
+            <span id="htmlChip" class="chip"
+              >HTML: <span class="warn">not loaded</span></span
+            >
+          </div>
+          <div class="row">
+            <label class="btn" for="folderBtn"
+              >📁 Import attachments folder</label
+            >
+            <input
+              id="folderBtn"
+              class="folder"
+              type="file"
+              webkitdirectory
+              directory
+              multiple
+            />
+            <span id="attChip" class="chip"
+              >Files: <span class="warn">0</span></span
+            >
+          </div>
+          <div class="row">
+            <input
+              id="filterSidebar"
+              class="search"
+              placeholder="Filter sidebar by title/ID…"
+            />
+          </div>
+          <div class="row">
+            <select id="sort" class="search" title="Sort by">
+              <option value="date_desc">Sort: Date ↓</option>
+              <option value="date_asc">Sort: Date ↑</option>
+              <option value="title_asc">Sort: Title A→Z</option>
+              <option value="title_desc">Sort: Title Z→A</option>
+            </select>
+          </div>
+          <div class="row">
+            <span class="chip"
+              >Shortcuts: <span class="kbd">Ctrl/Cmd+O</span> JSON,
+              <span class="kbd">Ctrl/Cmd+Shift+O</span> HTML</span
+            >
+          </div>
+        </div>
+        <div id="list" class="list" aria-live="polite"></div>
+      </aside>
+
+      <main>
+        <div class="row-space">
+          <h2 id="viewTitle">Viewer</h2>
+          <div id="viewInfo" class="pill">No conversation selected</div>
+        </div>
+
+        <div class="tabs">
+          <div id="tabMsg" class="tab active">Messages</div>
+          <div id="tabAtt" class="tab">Attachments</div>
+          <div id="tabExp" class="tab">Export</div>
+          <div id="tabSearch" class="tab">Search Results</div>
+        </div>
+
+        <section id="viewMessages" class="view active">
+          <div id="messages"></div>
+          <div id="placeholder" class="empty">
+            Load your <strong>conversation.json</strong> and
+            <strong>chat.html</strong>, then pick a conversation from the
+            sidebar.<br />
+            All content is escaped and shown as text. No code is executed.
+          </div>
+        </section>
+
+        <section id="viewAttachments" class="view">
+          <div class="hint">
+            Merges references parsed from chat.html/JSON with local files you
+            imported. Offline previews via Blob URLs.
+          </div>
+          <div id="attTableWrap" class="empty">No conversation selected.</div>
+          <h3 style="margin-top: 18px">Unattached files</h3>
+          <div id="unattached" class="empty">No local files imported.</div>
+        </section>
+
+        <section id="viewExport" class="view">
+          <div class="hint">
+            Export the current conversation as JSON or Markdown, and generate a
+            Virtual Restore manifest.
+          </div>
+          <div class="row" style="margin-top: 10px">
+            <button id="btnJSON" class="btn">Export JSON</button>
+            <button id="btnMD" class="btn">Export Markdown</button>
+            <button id="btnManifest" class="btn">
+              Generate Restore Manifest
+            </button>
+          </div>
+          <div id="expInfo" class="empty" style="margin-top: 12px">
+            No conversation selected.
+          </div>
+        </section>
+
+        <section id="viewSearch" class="view">
+          <div class="sr-controls">
+            <input
+              id="searchInput"
+              class="search"
+              placeholder="Search messages (e.g., index.html, 'render pipeline')…"
+              style="flex: 1"
+            />
+            <label class="pill" style="padding: 4px 8px"
+              ><input
+                id="chkAttach"
+                type="checkbox"
+                style="vertical-align: middle; margin-right: 6px"
+              />Include attachments</label
+            >
+            <button id="btnSearch" class="btn">Search</button>
+            <button id="btnClear" class="btn">Clear</button>
+            <span id="srCount" class="sr-count"></span>
+          </div>
+          <div id="results"></div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+        const $ = (sel, root = document) => root.querySelector(sel);
+        const $$ = (sel, root = document) =>
+          Array.from(root.querySelectorAll(sel));
+
+        const els = {
+          fileJSON: $("#fileJSON"),
+          fileHTML: $("#fileHTML"),
+          folderBtn: $("#folderBtn"),
+          list: $("#list"),
+          filterSidebar: $("#filterSidebar"),
+          sort: $("#sort"),
+          jsonChip: $("#jsonChip"),
+          htmlChip: $("#htmlChip"),
+          attChip: $("#attChip"),
+          messages: $("#messages"),
+          viewTitle: $("#viewTitle"),
+          viewInfo: $("#viewInfo"),
+          placeholder: $("#placeholder"),
+          tabMsg: $("#tabMsg"),
+          tabAtt: $("#tabAtt"),
+          tabExp: $("#tabExp"),
+          tabSearch: $("#tabSearch"),
+          viewMessages: $("#viewMessages"),
+          viewAttachments: $("#viewAttachments"),
+          viewExport: $("#viewExport"),
+          viewSearch: $("#viewSearch"),
+          attTableWrap: $("#attTableWrap"),
+          unattached: $("#unattached"),
+          btnJSON: $("#btnJSON"),
+          btnMD: $("#btnMD"),
+          btnManifest: $("#btnManifest"),
+          expInfo: $("#expInfo"),
+          searchInput: $("#searchInput"),
+          chkAttach: $("#chkAttach"),
+          btnSearch: $("#btnSearch"),
+          btnClear: $("#btnClear"),
+          results: $("#results"),
+          srCount: $("#srCount"),
+        };
+
+        // Data
+        let conversations = [];
+        let messagesById = {};
+        let htmlMessagesById = {};
+        let attachmentsById = {};
+        let localByBase = {};
+        let localMapByConv = {};
+        let filtered = [];
+        let currentConv = null;
+        let highlightTerms = [];
+
+        // Utils
+        function setChip(el, ok, text) {
+          el.innerHTML = escapeHTML(text || (ok ? "loaded" : "not loaded"));
+          el.className = "chip " + (ok ? "ok" : "danger");
+        }
+        function basename(p) {
+          if (!p) return "";
+          const parts = String(p).split(/[\\/]/).filter(Boolean);
+          return parts.pop() || "";
+        }
+        function escapeHTML(s) {
+          return String(s).replace(
+            /[&<>"']/g,
+            (ch) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              }[ch])
+          );
+        }
+        function escapeAttr(s) {
+          return String(s).replace(/"/g, "&quot;");
+        }
+        function safeName(s) {
+          return String(s || "conversation")
+            .replace(/[^\w\-]+/g, "_")
+            .slice(0, 80);
+        }
+        function toTs(v) {
+          if (v === null || v === undefined) return 0;
+          if (typeof v === "number") {
+            if (v > 1e12) return Math.floor(v / 1000);
+            if (v > 1e9) return Math.floor(v);
+            if (v > 1e8) return Math.floor(v);
+            return 0;
+          }
+          if (typeof v === "string") {
+            const d = new Date(v);
+            if (!Number.isNaN(d.getTime()))
+              return Math.floor(d.getTime() / 1000);
+            const n = Number(v);
+            if (Number.isFinite(n)) return toTs(n);
+          }
+          return 0;
+        }
+        function formatDate(sec) {
+          try {
+            if (!sec) return "";
+            const d = new Date(sec * 1000);
+            const y = d.getFullYear(),
+              m = String(d.getMonth() + 1).padStart(2, "0"),
+              dd = String(d.getDate()).padStart(2, "0"),
+              hh = String(d.getHours()).padStart(2, "0"),
+              mi = String(d.getMinutes()).padStart(2, "0");
+            return `${y}-${m}-${dd} ${hh}:${mi}`;
+          } catch {
+            return "";
+          }
+        }
+        function guessType(href, name) {
+          const s = (href || name || "").toLowerCase();
+          if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)(\?|$)/.test(s))
+            return "image/png";
+          if (/\.(mp4|mov|webm|mkv)(\?|$)/.test(s)) return "video/mp4";
+          if (/\.(mp3|wav|ogg|m4a)(\?|$)/.test(s)) return "audio/mpeg";
+          if (/\.(pdf)(\?|$)/.test(s)) return "application/pdf";
+          if (/\.(zip|rar|7z|tar|gz)(\?|$)/.test(s)) return "application/zip";
+          if (/\.(html|htm)(\?|$)/.test(s)) return "text/html";
+          if (/\.(js|ts|json|csv|txt|md|xml|yml|yaml)(\?|$)/.test(s))
+            return "text/plain";
+          return "application/octet-stream";
+        }
+        function pickId(o) {
+          return String(
+            o?.id ||
+              o?.conversation_id ||
+              o?.uuid ||
+              o?.thread_id ||
+              o?.threadId ||
+              o?.slug ||
+              ""
+          ).trim();
+        }
+        function pickTitle(o) {
+          let t = o?.title || o?.name || o?.topic || o?.subject || "";
+          if (!t && typeof o?.mapping?.title === "string") t = o.mapping.title;
+          return String(t || "(untitled)").trim();
+        }
+        function pickDate(o) {
+          const cand = [
+            o?.create_time,
+            o?.created_at,
+            o?.created,
+            o?.createdAt,
+            o?.timestamp,
+            o?.time,
+            o?.date,
+          ];
+          for (const c of cand) {
+            const v = toTs(c);
+            if (v) return v;
+          }
+          return 0;
+        }
+
+        function activateTab(key) {
+          [els.tabMsg, els.tabAtt, els.tabExp, els.tabSearch].forEach((x) =>
+            x.classList.remove("active")
+          );
+          [
+            els.viewMessages,
+            els.viewAttachments,
+            els.viewExport,
+            els.viewSearch,
+          ].forEach((x) => x.classList.remove("active"));
+          if (key === "msg") {
+            els.tabMsg.classList.add("active");
+            els.viewMessages.classList.add("active");
+          }
+          if (key === "att") {
+            els.tabAtt.classList.add("active");
+            els.viewAttachments.classList.add("active");
+          }
+          if (key === "exp") {
+            els.tabExp.classList.add("active");
+            els.viewExport.classList.add("active");
+          }
+          if (key === "search") {
+            els.tabSearch.classList.add("active");
+            els.viewSearch.classList.add("active");
+          }
+        }
+
+        // Events
+        $("#tabMsg").addEventListener("click", () => activateTab("msg"));
+        $("#tabAtt").addEventListener("click", () => activateTab("att"));
+        $("#tabExp").addEventListener("click", () => activateTab("exp"));
+        $("#tabSearch").addEventListener("click", () => activateTab("search"));
+
+        window.addEventListener("keydown", (e) => {
+          const key = e.key.toLowerCase();
+          if ((e.ctrlKey || e.metaKey) && key === "f") {
+            e.preventDefault();
+            activateTab("search");
+            els.searchInput.focus();
+          }
+        });
+
+        // Inputs
+        els.fileJSON.addEventListener("change", (e) => {
+          const f = e.target.files?.[0];
+          if (f) loadJSONFile(f);
+          e.target.value = "";
+        });
+        els.fileHTML.addEventListener("change", (e) => {
+          const f = e.target.files?.[0];
+          if (f) loadHTMLFile(f);
+          e.target.value = "";
+        });
+        els.folderBtn.addEventListener("change", (e) => {
+          const files = Array.from(e.target.files || []);
+          if (files.length) importLocalFiles(files);
+          e.target.value = "";
+        });
+        els.filterSidebar.addEventListener("input", applyFilters);
+        els.sort.addEventListener("change", applyFilters);
+        els.btnSearch.addEventListener("click", runSearch);
+        els.btnClear.addEventListener("click", () => {
+          els.searchInput.value = "";
+          els.results.innerHTML = "";
+          els.srCount.textContent = "";
+          highlightTerms = [];
+        });
+
+        // Drag&drop
+        document.addEventListener("dragover", (e) => {
+          e.preventDefault();
+        });
+        document.addEventListener("drop", (e) => {
+          e.preventDefault();
+          const files = [...(e.dataTransfer?.files || [])];
+          if (files.length) {
+            const json = files.find((x) => /\.json$/i.test(x.name));
+            const html = files.find((x) => /\.html?$/i.test(x.name));
+            if (json && files.length === 1) loadJSONFile(json);
+            if (html && files.length === 1) loadHTMLFile(html);
+            if (files.length > 1 || (!json && !html)) importLocalFiles(files);
+          }
+        });
+
+        // Parsing helpers
+        function deepFindFileRefs(node, acc = new Set(), depth = 0) {
+          if (depth > 6) return acc;
+          if (node === null || node === undefined) return acc;
+          if (typeof node === "string") {
+            const m = node.match(/file_[A-Za-z0-9._-]+/g);
+            if (m) for (const x of m) acc.add(x);
+            return acc;
+          }
+          if (Array.isArray(node)) {
+            for (const v of node) deepFindFileRefs(v, acc, depth + 1);
+            return acc;
+          }
+          if (typeof node === "object") {
+            for (const k in node) {
+              if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+              deepFindFileRefs(node[k], acc, depth + 1);
+            }
+          }
+          return acc;
+        }
+        function findConversationId(node) {
+          let el = node;
+          while (el) {
+            const cid = el.getAttribute?.("data-conversation-id");
+            if (cid) return cid;
+            el = el.parentElement;
+          }
+          return "";
+        }
+        function findPrevScriptWithId(el) {
+          let cur = el;
+          for (let i = 0; i < 30 && cur; i++) {
+            cur = cur.previousElementSibling || cur.parentElement;
+            if (
+              cur &&
+              cur.tagName === "SCRIPT" &&
+              cur.getAttribute("type") === "application/json"
+            ) {
+              try {
+                const j = JSON.parse(cur.textContent || "{}");
+                const cid = String(j.id || j.conversation_id || "").trim();
+                if (cid) return { cid };
+              } catch {}
+            }
+          }
+          return null;
+        }
+
+        function loadJSONFile(file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const data = JSON.parse(String(reader.result));
+              const normalized = normalizeConversations(data);
+              conversations = normalized.items;
+              messagesById = normalized.messagesById;
+              filtered = conversations.slice();
+              applyFilters();
+              setChip(els.jsonChip, true, `JSON: loaded (${file.name})`);
+            } catch (err) {
+              console.error(err);
+              setChip(els.jsonChip, false, "JSON: failed to parse");
+            }
+          };
+          reader.readAsText(file);
+        }
+        function loadHTMLFile(file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const htmlRaw = String(reader.result);
+              const parsed = parseChatHTML(htmlRaw);
+              htmlMessagesById = parsed.messages;
+              for (const k in parsed.attachments) {
+                (attachmentsById[k] = attachmentsById[k] || []).push(
+                  ...parsed.attachments[k]
+                );
+              }
+              setChip(els.htmlChip, true, `HTML: loaded (${file.name})`);
+              rebuildLocalMap();
+            } catch (err) {
+              console.error(err);
+              setChip(els.htmlChip, false, "HTML: failed to parse");
+            }
+          };
+          reader.readAsText(file);
+        }
+        function parseChatHTML(text) {
+          const out = { messages: {}, attachments: {} };
+          try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, "text/html");
+            const scripts = document.querySelectorAll(
+              'script[type="application/json"]',
+              doc
+            );
+            const list = scripts.length
+              ? scripts
+              : doc.querySelectorAll('script[type="application/json"]');
+            for (const s of list) {
+              try {
+                const json = JSON.parse(s.textContent || "{}");
+                if (json.mapping && typeof json.mapping === "object") {
+                  const msgs = [];
+                  for (const k in json.mapping) {
+                    const node = json.mapping[k];
+                    const m = node?.message || node;
+                    const sh = shapeMappingMessage(m);
+                    if (sh) msgs.push(sh);
+                  }
+                  const cid = String(
+                    json.id || json.conversation_id || ""
+                  ).trim();
+                  if (cid && msgs.length) {
+                    msgs.sort(
+                      (a, b) => (a.create_time || 0) - (b.create_time || 0)
+                    );
+                    out.messages[cid] = (out.messages[cid] || []).concat(msgs);
+                  }
+                }
+                const arrays = [];
+                if (Array.isArray(json.items)) arrays.push(json.items);
+                if (Array.isArray(json.threads)) arrays.push(json.threads);
+                if (Array.isArray(json.conversations))
+                  arrays.push(json.conversations);
+                for (const arr of arrays) {
+                  for (const obj of arr) {
+                    const cid = pickId(obj);
+                    if (!cid) continue;
+                    const inline = extractInlineMessages(obj);
+                    if (inline.length) {
+                      inline.sort(
+                        (a, b) => (a.create_time || 0) - (b.create_time || 0)
+                      );
+                      out.messages[cid] = (out.messages[cid] || []).concat(
+                        inline
+                      );
+                    }
+                    const files = deepFindFileRefs(obj);
+                    for (const fname of files) {
+                      const att = {
+                        cid,
+                        href: fname,
+                        filename: fname,
+                        type: guessType(fname, fname),
+                        source: "json",
+                      };
+                      (out.attachments[cid] = out.attachments[cid] || []).push(
+                        att
+                      );
+                    }
+                  }
+                }
+                const topCid = String(
+                  json.id || json.conversation_id || ""
+                ).trim();
+                if (topCid) {
+                  const filesTop = deepFindFileRefs(json);
+                  for (const fname of filesTop) {
+                    const att = {
+                      cid: topCid,
+                      href: fname,
+                      filename: fname,
+                      type: guessType(fname, fname),
+                      source: "json",
+                    };
+                    (out.attachments[topCid] =
+                      out.attachments[topCid] || []).push(att);
+                  }
+                }
+              } catch {}
+            }
+            const linkNodes = doc.querySelectorAll("a[href], img[src]");
+            for (const n of linkNodes) {
+              const href =
+                n.getAttribute("href") || n.getAttribute("src") || "";
+              if (!href) continue;
+              const m = href.match(/(^|[\\/])file_[^?#"'<>\\s]+/i);
+              if (!m) continue;
+              const fname = m[0].split(/[\\/]/).pop();
+              let cid = findConversationId(n);
+              if (!cid) {
+                const prev = findPrevScriptWithId(n);
+                cid = prev?.cid || "";
+              }
+              const att = {
+                cid: cid || "__unknown__",
+                href: fname,
+                filename: fname,
+                type: guessType(href, fname),
+                context: (n.textContent || "").trim().slice(0, 200),
+                source: "html",
+              };
+              (out.attachments[att.cid] = out.attachments[att.cid] || []).push(
+                att
+              );
+            }
+          } catch (e) {
+            console.warn("HTML parse error", e);
+          }
+          return out;
+        }
+        function normalizeConversations(data) {
+          const candidates = [];
+          if (Array.isArray(data)) candidates.push(data);
+          if (Array.isArray(data.conversations))
+            candidates.push(data.conversations);
+          if (Array.isArray(data.items)) candidates.push(data.items);
+          if (Array.isArray(data.threads)) candidates.push(data.threads);
+          if (candidates.length === 0) {
+            for (const k in data) {
+              if (
+                Array.isArray(data[k]) &&
+                data[k].length &&
+                typeof data[k][0] === "object"
+              ) {
+                candidates.push(data[k]);
+              }
+            }
+          }
+          const arr = candidates[0] || [];
+          const items = [];
+          const msgs = {};
+          for (const obj of arr) {
+            const id = pickId(obj);
+            const title = pickTitle(obj);
+            const date = pickDate(obj);
+            if (!id || !title) continue;
+            items.push({ id, title, date });
+            const inline = extractInlineMessages(obj);
+            if (inline.length) msgs[id] = inline;
+          }
+          return { items, messagesById: msgs };
+        }
+        function extractInlineMessages(obj) {
+          const out = [];
+          if (Array.isArray(obj.messages)) {
+            for (const m of obj.messages) {
+              const msg = shapeMessage(m);
+              if (msg) out.push(msg);
+            }
+          }
+          if (obj.mapping && typeof obj.mapping === "object") {
+            for (const k in obj.mapping) {
+              const node = obj.mapping[k];
+              const m = node?.message || node;
+              const msg = shapeMappingMessage(m);
+              if (msg) out.push(msg);
+            }
+          }
+          if (obj.thread && Array.isArray(obj.thread.messages)) {
+            for (const m of obj.thread.messages) {
+              const msg = shapeMessage(m);
+              if (msg) out.push(msg);
+            }
+          }
+          out.sort((a, b) => (a.create_time || 0) - (b.create_time || 0));
+          return out;
+        }
+        function shapeMessage(m) {
+          try {
+            const id = String(m.id || m.message_id || m.uuid || "").trim();
+            const role = m.role || m.author?.role || m.sender || "unknown";
+            const author = m.author?.name || role;
+            const create_time = toTs(
+              m.create_time || m.created_at || m.timestamp || m.time || 0
+            );
+            let content = "";
+            if (typeof m.content === "string") content = m.content;
+            else if (Array.isArray(m.content)) content = m.content.join("\n");
+            else if (m.content?.parts)
+              content = String(m.content.parts.join("\n"));
+            else if (m.content?.text) content = String(m.content.text);
+            else content = JSON.stringify(m.content ?? "", null, 2);
+            return { id, author, role, create_time, content };
+          } catch {
+            return null;
+          }
+        }
+        function shapeMappingMessage(m) {
+          try {
+            const id = String(m.id || m.message_id || "").trim();
+            const role = m.author?.role || "unknown";
+            const author = m.author?.name || role;
+            const create_time = toTs(m.create_time || 0);
+            let content = "";
+            if (m.content?.parts) content = String(m.content.parts.join("\n"));
+            else if (typeof m.content === "string") content = m.content;
+            else content = JSON.stringify(m.content ?? "", null, 2);
+            return { id, author, role, create_time, content };
+          } catch {
+            return null;
+          }
+        }
+
+        // Sidebar
+        function applyFilters() {
+          const q = els.filterSidebar.value.trim().toLowerCase();
+          const mode = els.sort.value;
+          let arr = conversations.slice();
+          if (q) {
+            arr = arr.filter(
+              (c) =>
+                c.title.toLowerCase().includes(q) ||
+                c.id.toLowerCase().includes(q)
+            );
+          }
+          arr.sort((a, b) => {
+            if (mode === "date_desc") return (b.date || 0) - (a.date || 0);
+            if (mode === "date_asc") return (a.date || 0) - (b.date || 0);
+            if (mode === "title_asc") return a.title.localeCompare(b.title);
+            if (mode === "title_desc") return b.title.localeCompare(a.title);
+            return 0;
+          });
+          filtered = arr;
+          renderList();
+        }
+        function renderList() {
+          if (filtered.length === 0) {
+            els.list.innerHTML =
+              '<div class="empty" role="status">No conversations found. Import your <code>conversation.json</code>.</div>';
+            return;
+          }
+          const frag = document.createDocumentFragment();
+          for (const c of filtered) {
+            const div = document.createElement("div");
+            div.className = "item";
+            div.innerHTML = `<div class="title">${escapeHTML(c.title)}</div>
+          <div class="meta"><span class="pill">${
+            c.date ? escapeHTML(formatDate(c.date)) : "No date"
+          }</span>&nbsp;•&nbsp;<span class="pill">${escapeHTML(
+              shortId(c.id)
+            )}</span></div>`;
+            div.addEventListener("click", () => showConversation(c));
+            frag.appendChild(div);
+          }
+          els.list.innerHTML = "";
+          els.list.appendChild(frag);
+        }
+        function shortId(id) {
+          return id.length > 24 ? id.slice(0, 12) + "…" + id.slice(-8) : id;
+        }
+
+        function showConversation(conv) {
+          currentConv = conv;
+          els.viewTitle.textContent = conv.title;
+          els.expInfo.textContent = `Ready to export “${conv.title}”`;
+          const sources = [];
+          const jsonMsgs = messagesById[conv.id] || [];
+          if (jsonMsgs.length) sources.push({ name: "JSON", msgs: jsonMsgs });
+          const htmlMsgs = htmlMessagesById[conv.id] || [];
+          if (htmlMsgs.length) sources.push({ name: "HTML", msgs: htmlMsgs });
+          els.placeholder.style.display = "none";
+          const map = new Map();
+          for (const src of sources) {
+            for (const m of src.msgs) {
+              if (!map.has(m.id)) map.set(m.id, m);
+            }
+          }
+          const list = Array.from(map.values()).sort(
+            (a, b) => (a.create_time || 0) - (b.create_time || 0)
+          );
+          els.viewInfo.textContent =
+            sources.map((s) => `${s.name}:${s.msgs.length}`).join(" · ") ||
+            "No messages found";
+          renderMessages(list);
+          renderAttachments(conv.id);
+          if (highlightTerms.length) {
+            highlightInView(highlightTerms);
+          }
+        }
+        function renderMessages(list) {
+          const frag = document.createDocumentFragment();
+          if (!list.length) {
+            const empty = document.createElement("div");
+            empty.className = "empty";
+            empty.textContent = "No messages to display.";
+            frag.appendChild(empty);
+          } else {
+            for (const m of list) {
+              const card = document.createElement("div");
+              card.className = "msg";
+              card.id = `msg_${m.id}`;
+              const top = document.createElement("div");
+              top.className = "row-space";
+              const who = document.createElement("div");
+              who.className = "who";
+              who.textContent = `${m.author || m.role || "unknown"}`;
+              const when = document.createElement("div");
+              when.className = "when";
+              when.textContent = m.create_time ? formatDate(m.create_time) : "";
+              top.appendChild(who);
+              top.appendChild(when);
+              const pre = document.createElement("pre");
+              pre.className = "code";
+              pre.textContent = String(m.content || "");
+              const copy = document.createElement("div");
+              copy.className = "copy pill";
+              copy.textContent = "Copy";
+              copy.addEventListener("click", () => {
+                navigator.clipboard
+                  .writeText(pre.textContent || "")
+                  .catch(() => {});
+                copy.textContent = "Copied";
+                setTimeout(() => (copy.textContent = "Copy"), 1200);
+              });
+              const line2 = document.createElement("div");
+              line2.className = "row-space";
+              line2.appendChild(document.createElement("div"));
+              line2.appendChild(copy);
+              card.appendChild(top);
+              card.appendChild(pre);
+              card.appendChild(line2);
+              frag.appendChild(card);
+            }
+          }
+          els.messages.innerHTML = "";
+          els.messages.appendChild(frag);
+        }
+
+        function renderAttachments(cid) {
+          const links = (attachmentsById[cid] || []).slice();
+          const localBases = localMapByConv[cid] || [];
+          const localFiles = localBases
+            .map((b) => localByBase[b])
+            .filter(Boolean);
+          let linkHTML = "";
+          if (links.length) {
+            const rows = links
+              .map(
+                (a) =>
+                  `<tr><td>${escapeHTML(
+                    basename(a.filename || a.href || "")
+                  )}</td><td>${escapeHTML(a.type || "")}</td><td>${escapeHTML(
+                    a.href
+                  )}</td><td>${escapeHTML(a.context || "")}</td></tr>`
+              )
+              .join("");
+            linkHTML = `<h3>References (${links.length})</h3><table><thead><tr><th>Filename</th><th>Type</th><th>Ref</th><th>Context</th></tr></thead><tbody>${rows}</tbody></table>`;
+          } else linkHTML = `<div class="empty">No references found.</div>`;
+          let localHTML = "";
+          if (localFiles.length) {
+            const cards = localFiles
+              .map((lf) => {
+                const img = /^image\//.test(lf.type)
+                  ? `<img class="thumb" src="${lf.url}" alt="${escapeAttr(
+                      lf.name
+                    )}">`
+                  : "";
+                const down = `<a href="${lf.url}" download="${escapeAttr(
+                  lf.name
+                )}">Download</a>`;
+                return `<div class="card"><div class="fname">${escapeHTML(
+                  lf.name
+                )}</div>${img}<div class="hint">${escapeHTML(
+                  lf.type || "file"
+                )} • ${lf.size} bytes • ${escapeHTML(
+                  lf.path
+                )}</div>${down}</div>`;
+              })
+              .join("");
+            localHTML = `<h3>Local files matched (${localFiles.length})</h3><div class="grid">${cards}</div>`;
+          } else
+            localHTML = `<div class="empty">No local files matched this conversation.</div>`;
+          els.attTableWrap.className = "";
+          els.attTableWrap.innerHTML = linkHTML + localHTML;
+        }
+
+        function importLocalFiles(files) {
+          for (const f of files) {
+            const base = basename(f.name);
+            const rel = f.webkitRelativePath || f.name;
+            const inUser = /(^|[\\/])user-[^\\/]+[\\/]/i.test(rel);
+            const isExport = /^file_/i.test(base) || inUser;
+            const isKnownExt =
+              /\.(png|jpe?g|webp|gif|svg|pdf|zip|txt|md|json|html?|csv|xml|js|ts)$/i.test(
+                base
+              );
+            if (!isExport && !isKnownExt) continue;
+            if (localByBase[base]) continue;
+            const url = URL.createObjectURL(f);
+            localByBase[base] = {
+              name: base,
+              path: rel,
+              url,
+              type: f.type || guessType(base, base),
+              size: f.size || 0,
+            };
+          }
+          setChip(
+            els.attChip,
+            true,
+            `Files: ${Object.keys(localByBase).length}`
+          );
+          rebuildLocalMap();
+        }
+        function rebuildLocalMap() {
+          localMapByConv = {};
+          for (const cid in attachmentsById) {
+            for (const a of attachmentsById[cid] || []) {
+              const key = (
+                basename(a.filename || "") || basename(a.href || "")
+              ).toLowerCase();
+              if (!key) continue;
+              const matchKey = Object.keys(localByBase).find(
+                (k) => k.toLowerCase() === key
+              );
+              if (matchKey) {
+                (localMapByConv[cid] = localMapByConv[cid] || []).push(
+                  matchKey
+                );
+              }
+            }
+          }
+          updateUnattached();
+        }
+        function updateUnattached() {
+          const attached = new Set(Object.values(localMapByConv).flat());
+          const unatt = Object.keys(localByBase).filter(
+            (b) => !attached.has(b)
+          );
+          const el = els.unattached;
+          if (!unatt.length) {
+            el.className = "empty";
+            el.textContent = "No unattached local files.";
+            return;
+          }
+          const grid = document.createElement("div");
+          grid.className = "grid";
+          for (const base of unatt) {
+            const lf = localByBase[base];
+            const card = document.createElement("div");
+            card.className = "card";
+            const name = document.createElement("div");
+            name.className = "fname";
+            name.textContent = lf.name;
+            card.appendChild(name);
+            if (/^image\//.test(lf.type)) {
+              const img = document.createElement("img");
+              img.className = "thumb";
+              img.src = lf.url;
+              img.alt = lf.name;
+              card.appendChild(img);
+            }
+            const a = document.createElement("a");
+            a.href = lf.url;
+            a.download = lf.name;
+            a.textContent = "Download";
+            card.appendChild(a);
+            grid.appendChild(card);
+          }
+          el.className = "";
+          el.innerHTML = "";
+          el.appendChild(grid);
+        }
+
+        // Search
+        function runSearch() {
+          const q = els.searchInput.value.trim();
+          activateTab("search");
+          if (!q) {
+            els.results.innerHTML =
+              '<div class="empty">Enter a word or phrase to search.</div>';
+            els.srCount.textContent = "";
+            return;
+          }
+          const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+          highlightTerms = terms.slice();
+          const hits = [];
+          for (const c of conversations) {
+            const cid = c.id;
+            const title = c.title;
+            // merge messages
+            const js = messagesById[cid] || [];
+            const hm = htmlMessagesById[cid] || [];
+            const map = new Map();
+            for (const m of js) {
+              if (!map.has(m.id)) map.set(m.id, m);
+            }
+            for (const m of hm) {
+              if (!map.has(m.id)) map.set(m.id, m);
+            }
+            for (const m of map.values()) {
+              const text = String(m.content || "");
+              const low = text.toLowerCase();
+              let ok = true;
+              for (const t of terms) {
+                if (!low.includes(t)) {
+                  ok = false;
+                  break;
+                }
+              }
+              if (ok) {
+                hits.push({
+                  cid,
+                  mid: m.id,
+                  title,
+                  author: m.author || m.role || "unknown",
+                  when: m.create_time || 0,
+                  snippet: makeSnippet(text, terms),
+                });
+              }
+            }
+            if (els.chkAttach.checked) {
+              const atts = attachmentsById[cid] || [];
+              for (const a of atts) {
+                const txt =
+                  (a.filename || a.href || "") + " " + (a.context || "");
+                const low = txt.toLowerCase();
+                let ok = true;
+                for (const t of terms) {
+                  if (!low.includes(t)) {
+                    ok = false;
+                    break;
+                  }
+                }
+                if (ok) {
+                  hits.push({
+                    cid,
+                    mid: `att_${a.filename || a.href}`,
+                    title,
+                    author: "(attachment)",
+                    when: 0,
+                    snippet: makeSnippet(txt, terms),
+                  });
+                }
+              }
+            }
+          }
+          // group and render
+          const byCid = new Map();
+          for (const h of hits) {
+            if (!byCid.has(h.cid)) byCid.set(h.cid, []);
+            byCid.get(h.cid).push(h);
+          }
+          const entries = Array.from(byCid.entries()).sort(
+            (a, b) => b[1].length - a[1].length
+          );
+          els.srCount.textContent = `${hits.length} matches in ${entries.length} conversations`;
+          if (!entries.length) {
+            els.results.innerHTML =
+              '<div class="empty">No matches found.</div>';
+            return;
+          }
+          const frag = document.createDocumentFragment();
+          for (const [cid, arr] of entries) {
+            const div = document.createElement("div");
+            div.className = "result";
+            const title =
+              conversations.find((c) => c.id === cid)?.title || "(unknown)";
+            div.innerHTML = `<h4>${escapeHTML(title)}</h4><div class="muted">${
+              arr.length
+            } match(es)</div>`;
+            const ul = document.createElement("div");
+            for (const h of arr.slice(0, 3)) {
+              const p = document.createElement("div");
+              p.className = "muted";
+              p.innerHTML = h.snippet;
+              ul.appendChild(p);
+            }
+            div.appendChild(ul);
+            div.addEventListener("click", () => {
+              const first = arr[0];
+              const conv = conversations.find((c) => c.id === cid);
+              if (conv) {
+                showConversation(conv);
+                setTimeout(() => {
+                  const target = document.getElementById("msg_" + first.mid);
+                  if (target) {
+                    target.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
+                    pulse(target);
+                  }
+                  highlightInView(highlightTerms);
+                }, 80);
+                activateTab("msg");
+              }
+            });
+            frag.appendChild(div);
+          }
+          els.results.innerHTML = "";
+          els.results.appendChild(frag);
+        }
+        function pulse(node) {
+          node.style.outline = "2px solid var(--accent-2)";
+          setTimeout(() => (node.style.outline = ""), 800);
+        }
+        function makeSnippet(text, terms) {
+          const lower = text.toLowerCase();
+          let idx = -1;
+          for (const t of terms) {
+            const i = lower.indexOf(t);
+            if (i >= 0) {
+              idx = i;
+              break;
+            }
+          }
+          if (idx < 0) idx = 0;
+          const start = Math.max(0, idx - 40),
+            end = Math.min(text.length, idx + 80);
+          const chunk = text.slice(start, end);
+          return highlight(chunk, terms);
+        }
+        function highlightInView(terms) {
+          const pres = document.querySelectorAll("#messages pre.code");
+          for (const pre of pres) {
+            const raw = pre.textContent || "";
+            pre.innerHTML = highlight(escapeHTML(raw), terms, true);
+          }
+        }
+        function highlight(s, terms, alreadyEscaped) {
+          let text = s;
+          if (!alreadyEscaped) text = escapeHTML(text);
+          for (const t of terms) {
+            const re = new RegExp("(" + escapeRegExp(t) + ")", "ig");
+            text = text.replace(re, "<mark>$1</mark>");
+          }
+          return text;
+        }
+        function escapeRegExp(s) {
+          return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        }
+
+        // Export
+        function buildExportJSON(conv) {
+          const msgs = (messagesById[conv.id] || []).concat(
+            htmlMessagesById[conv.id] || []
+          );
+          const seen = new Set();
+          const uniq = [];
+          for (const m of msgs) {
+            if (m && !seen.has(m.id)) {
+              seen.add(m.id);
+              uniq.push(m);
+            }
+          }
+          const linkAtt = attachmentsById[conv.id] || [];
+          const localBases = localMapByConv[conv.id] || [];
+          const localFiles = localBases
+            .map((b) => localByBase[b])
+            .filter(Boolean);
+          return {
+            id: conv.id,
+            title: conv.title,
+            date: conv.date,
+            messages: uniq.sort(
+              (a, b) => (a.create_time || 0) - (b.create_time || 0)
+            ),
+            attachments: linkAtt,
+            localFiles: localFiles.map((f) => ({
+              name: f.name,
+              path: f.path,
+              type: f.type,
+              size: f.size,
+            })),
+          };
+        }
+        function buildExportMarkdown(conv) {
+          const data = buildExportJSON(conv);
+          const lines = [];
+          lines.push(`# ${escapeMD(data.title)}\n`);
+          lines.push(`**Conversation ID:** ${escapeMD(data.id)}  `);
+          lines.push(`**Date:** ${data.date ? formatDate(data.date) : ""}\n`);
+          lines.push(`## Messages\n`);
+          for (const m of data.messages) {
+            const who = m.author || m.role || "unknown";
+            const when = m.create_time ? formatDate(m.create_time) : "";
+            lines.push(`### ${escapeMD(who)} — ${when}`);
+            lines.push("");
+            lines.push("```");
+            lines.push(String(m.content || ""));
+            lines.push("```");
+            lines.push("");
+          }
+          lines.push("## Attachments (refs from chat.html / JSON)");
+          if (!data.attachments.length) lines.push("_No references detected._");
+          else
+            for (const a of data.attachments) {
+              lines.push(
+                `- ${escapeMD(a.filename || "(unknown)")} — ${escapeMD(
+                  a.type || "file"
+                )} — ${a.href}`
+              );
+            }
+          lines.push("\n## Local files (imported)");
+          if (!data.localFiles.length) lines.push("_No local files matched._");
+          else
+            for (const f of data.localFiles) {
+              lines.push(
+                `- ${escapeMD(f.name)} — ${escapeMD(f.type || "file")} — ${
+                  f.size
+                } bytes — ${escapeMD(f.path)}`
+              );
+            }
+          lines.push("");
+          return lines.join("\n");
+        }
+        function escapeMD(s) {
+          return String(s).replace(/([\\`*_{}\[\]()#+\-.!])/g, "\\$1");
+        }
+       function buildRestoreManifest(conv) {
+  const data = buildExportJSON(conv);
+  const title = safeName(conv.title);
+  const lines = [];
+
+  lines.push(`ChatGPT Backup Export Viewer — Restore Manifest`);
+  lines.push(`Conversation ID: ${conv.id}`);
+  lines.push(`Title: ${conv.title}`);
+  lines.push(`Date: ${data.date ? formatDate(data.date) : ""}`);
+  lines.push("");
+  lines.push("📁 Suggested Folder Structure:");
+  lines.push("ChatGPT_Archive/");
+  lines.push("├── Conversations/");
+  lines.push(`│   ├── ${title}/`);
+  lines.push("│   │   ├── conversation.json");
+  lines.push("│   │   ├── conversation.md");
+  lines.push("│   │   └── attachments/");
+  lines.push("├── Attachments/");
+  lines.push("└── Misc/");
+  lines.push("");
+  lines.push("🧩 References from chat.html / JSON:");
+  if (!data.attachments.length)
+    lines.push("- (none)");
+  else
+    for (const a of data.attachments)
+      lines.push(`- ${a.filename || "(unknown)"} | ${a.type || "file"} | ${a.href}`);
+  lines.push("");
+  lines.push("📦 Local files (imported):");
+  if (!data.localFiles.length)
+    lines.push("- (none)");
+  else
+    for (const f of data.localFiles)
+      lines.push(`- ${f.name} | ${f.type || "file"} | ${f.size} bytes | ${f.path}`);
+  lines.push("");
+  lines.push("Note: This manifest is a text reference only. It does not include binary data.");
+
+  return lines.join("\n");
+}
+
+
+
+        // --- Export actions ---
+function downloadFile(name, text, mime = "text/plain") {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+els.btnJSON.addEventListener("click", () => {
+  if (!currentConv) {
+    els.expInfo.textContent = "⚠️ No conversation selected.";
+    return;
+  }
+  const data = buildExportJSON(currentConv);
+  const json = JSON.stringify(data, null, 2);
+  downloadFile(safeName(currentConv.title) + ".json", json, "application/json");
+  els.expInfo.textContent = "✅ JSON export completed.";
+});
+
+els.btnMD.addEventListener("click", () => {
+  if (!currentConv) {
+    els.expInfo.textContent = "⚠️ No conversation selected.";
+    return;
+  }
+  const md = buildExportMarkdown(currentConv);
+  downloadFile(safeName(currentConv.title) + ".md", md, "text/markdown");
+  els.expInfo.textContent = "✅ Markdown export completed.";
+});
+
+els.btnManifest.addEventListener("click", () => {
+  if (!currentConv) {
+    els.expInfo.textContent = "⚠️ No conversation selected.";
+    return;
+  }
+  const txt = buildRestoreManifest(currentConv);
+  downloadFile(safeName(currentConv.title) + "_manifest.txt", txt, "text/plain");
+  els.expInfo.textContent = "✅ Restore Manifest generated.";
+});
+
+
+        // Init
+        applyFilters();
+      })();
+    </script>
+  </body>
+</html>
