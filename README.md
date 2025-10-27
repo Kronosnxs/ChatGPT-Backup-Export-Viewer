@@ -89,11 +89,11 @@ ChatGPT_Export/
 ## 📦 Metadata
 
 **Project name:** ChatGPT Backup Export Viewer  
-**Version:** 0.9.4  
+**Version:** 0.9.5  
 **Author:** [Kronosnxs (Bob)](https://github.com/kronosnxs)  
 **License:** MIT  
-**MD5:** `114dc4609dd468e46c35998f1a89f64a`  
-**File size:** 59 KB  
+**MD5:** `ef58e0ed35eb64eae88ac3388b1dd8bc`  
+**File size:** 60 KB  
 
 ---
 
