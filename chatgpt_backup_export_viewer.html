@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
 Project: ChatGPT Backup Export Viewer
-Version: v0.9 — Full-Text Search
+Version: v0.9.4 — Full-Text Search
 Date: 2025-10-25
 Author: Bob van Zeeland (Kronosnxs)
 -->
@@ -9,7 +9,7 @@ Author: Bob van Zeeland (Kronosnxs)
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ChatGPT Backup Export Viewer — v0.9</title>
+    <title>ChatGPT Backup Export Viewer — v0.9.4</title>
     <style>
       :root {
         --bg: #0f1320;
@@ -311,7 +311,7 @@ Author: Bob van Zeeland (Kronosnxs)
       <aside>
         <header>
           <h1>ChatGPT Backup Export Viewer</h1>
-          <p class="sub">v0.9 — Full-Text Search</p>
+          <p class="sub">v0.9.4 — Full-Text Search</p>
         </header>
         <div class="controls">
           <div class="row">
@@ -572,6 +572,19 @@ Author: Bob van Zeeland (Kronosnxs)
             return "text/plain";
           return "application/octet-stream";
         }
+        function normalizeFileRef(ref) {
+          if (!ref) return "";
+          let base = String(ref).trim();
+          base = base.replace(/^sediment:\/\//i, ""); // remove scheme
+          base = base.replace(/^asset:\/\//i, "");
+          base = base.split(/[?#]/)[0]; // strip query or fragment
+          // match both full and partial IDs
+          const core = base.match(/file_[A-Za-z0-9]+/i);
+          base = core ? core[0] : base;
+          if (!/\.[a-z0-9]{2,5}$/i.test(base)) base += ".png"; // ensure extension
+          return basename(base).toLowerCase();
+        }
+
         function pickId(o) {
           return String(
             o?.id ||
@@ -950,6 +963,26 @@ Author: Bob van Zeeland (Kronosnxs)
           out.sort((a, b) => (a.create_time || 0) - (b.create_time || 0));
           return out;
         }
+
+        function extractTextContent(m) {
+          if (!m) return "";
+          if (typeof m === "string") return m;
+          if (Array.isArray(m)) return m.map(extractTextContent).join("\n");
+          if (typeof m === "object") {
+            if (Array.isArray(m.parts))
+              return m.parts.map(extractTextContent).join("\n");
+            if (m.text) return extractTextContent(m.text);
+            if (m.value) return extractTextContent(m.value);
+            if (m.message) return extractTextContent(m.message);
+            if (m.data) return extractTextContent(m.data);
+            // fallback: flatten primitive values
+            return Object.values(m)
+              .filter((v) => typeof v !== "object")
+              .join(" ");
+          }
+          return "";
+        }
+
         function shapeMessage(m) {
           try {
             const id = String(m.id || m.message_id || m.uuid || "").trim();
@@ -958,28 +991,20 @@ Author: Bob van Zeeland (Kronosnxs)
             const create_time = toTs(
               m.create_time || m.created_at || m.timestamp || m.time || 0
             );
-            let content = "";
-            if (typeof m.content === "string") content = m.content;
-            else if (Array.isArray(m.content)) content = m.content.join("\n");
-            else if (m.content?.parts)
-              content = String(m.content.parts.join("\n"));
-            else if (m.content?.text) content = String(m.content.text);
-            else content = JSON.stringify(m.content ?? "", null, 2);
+            const content = extractTextContent(m.content);
             return { id, author, role, create_time, content };
           } catch {
             return null;
           }
         }
+
         function shapeMappingMessage(m) {
           try {
             const id = String(m.id || m.message_id || "").trim();
             const role = m.author?.role || "unknown";
             const author = m.author?.name || role;
             const create_time = toTs(m.create_time || 0);
-            let content = "";
-            if (m.content?.parts) content = String(m.content.parts.join("\n"));
-            else if (typeof m.content === "string") content = m.content;
-            else content = JSON.stringify(m.content ?? "", null, 2);
+            const content = extractTextContent(m.content);
             return { id, author, role, create_time, content };
           } catch {
             return null;
@@ -1056,6 +1081,35 @@ Author: Bob van Zeeland (Kronosnxs)
           els.viewInfo.textContent =
             sources.map((s) => `${s.name}:${s.msgs.length}`).join(" · ") ||
             "No messages found";
+          // Merge inline file references from message content into attachments
+          const refsInline = [];
+          for (const m of list) {
+            const matches =
+              String(m.content || "").match(/file_[A-Za-z0-9._-]+/g) || [];
+            for (const r of matches) {
+              const norm = normalizeFileRef(r);
+              if (!attachmentsById[conv.id]) attachmentsById[conv.id] = [];
+              const already = attachmentsById[conv.id].some(
+                (a) => normalizeFileRef(a.filename || a.href) === norm
+              );
+              if (!already) {
+                const matchKey = Object.keys(localByBase).find((k) =>
+                  normalizeFileRef(k).startsWith(norm.replace(/\.png$/, ""))
+                );
+                const type = matchKey
+                  ? localByBase[matchKey].type
+                  : guessType(norm, norm);
+                attachmentsById[conv.id].push({
+                  cid: conv.id,
+                  href: norm,
+                  filename: norm,
+                  type,
+                  source: "inline",
+                });
+              }
+            }
+          }
+
           renderMessages(list);
           renderAttachments(conv.id);
           if (highlightTerms.length) {
@@ -1086,7 +1140,49 @@ Author: Bob van Zeeland (Kronosnxs)
               top.appendChild(when);
               const pre = document.createElement("pre");
               pre.className = "code";
-              pre.textContent = String(m.content || "");
+              let content = String(m.content || "");
+
+              // detect inline file references like file_00000...
+              const refs = content.match(/file_[A-Za-z0-9._-]+/g) || [];
+              if (refs.length) {
+                let html = escapeHTML(content);
+                for (const r of refs) {
+                  const base = normalizeFileRef(r);
+                  const matchKey = Object.keys(localByBase).find((k) =>
+                    normalizeFileRef(k).startsWith(base.replace(/\.png$/, ""))
+                  );
+
+                  const match = matchKey ? localByBase[matchKey] : null;
+
+                  if (match) {
+                    const isImg = /^image\//.test(match.type);
+                    const thumb = isImg
+                      ? `<img src="${match.url}" alt="${escapeAttr(
+                          base
+                        )}" class="thumb" style="max-width:140px;display:block;margin:6px 0;">`
+                      : `<a href="${match.url}" download="${escapeAttr(
+                          base
+                        )}">${escapeHTML(base)}</a>`;
+                    const safeURL = escapeAttr(match.url);
+                    html = html.replace(
+                      new RegExp(escapeRegExp(r), "g"),
+                      `<a href="${safeURL}" target="_blank">${escapeHTML(
+                        base
+                      )}</a><br>${thumb}`
+                    );
+                  } else {
+                    // fallback link (not loaded locally)
+                    html = html.replace(
+                      new RegExp(escapeRegExp(r), "g"),
+                      `<span class="muted">${escapeHTML(r)} (not found)</span>`
+                    );
+                  }
+                }
+                pre.innerHTML = html;
+              } else {
+                pre.textContent = content;
+              }
+
               const copy = document.createElement("div");
               copy.className = "copy pill";
               copy.textContent = "Copy";
@@ -1117,20 +1213,50 @@ Author: Bob van Zeeland (Kronosnxs)
           const localFiles = localBases
             .map((b) => localByBase[b])
             .filter(Boolean);
+
+          // 🔹 Inline + thumbnail rendering
           let linkHTML = "";
           if (links.length) {
             const rows = links
-              .map(
-                (a) =>
-                  `<tr><td>${escapeHTML(
-                    basename(a.filename || a.href || "")
-                  )}</td><td>${escapeHTML(a.type || "")}</td><td>${escapeHTML(
-                    a.href
-                  )}</td><td>${escapeHTML(a.context || "")}</td></tr>`
-              )
+              .map((a) => {
+                const base = basename(a.filename || a.href || "").toLowerCase();
+                const matchKey = Object.keys(localByBase).find(
+                  (k) => normalizeFileRef(k) === normalizeFileRef(base)
+                );
+                const local = matchKey ? localByBase[matchKey] : null;
+                const thumb =
+                  local && /^image\//.test(local.type)
+                    ? `<img src="${local.url}" alt="${escapeAttr(
+                        base
+                      )}" class="thumb" style="max-width:120px;max-height:90px;border-radius:8px;">`
+                    : "";
+
+                return `<tr>
+          <td style="width:140px;">${thumb || "—"}</td>
+          <td>${escapeHTML(base)}</td>
+          <td>${escapeHTML(a.type || "")}</td>
+          <td>${escapeHTML(a.href)}</td>
+          <td>${escapeHTML(a.context || "")}</td>
+        </tr>`;
+              })
               .join("");
-            linkHTML = `<h3>References (${links.length})</h3><table><thead><tr><th>Filename</th><th>Type</th><th>Ref</th><th>Context</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+            linkHTML = `<h3>References (${links.length})</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Preview</th>
+          <th>Filename</th>
+          <th>Type</th>
+          <th>Ref</th>
+          <th>Context</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
           } else linkHTML = `<div class="empty">No references found.</div>`;
+
+          // 🔹 Local matches (unchanged)
           let localHTML = "";
           if (localFiles.length) {
             const cards = localFiles
@@ -1138,7 +1264,7 @@ Author: Bob van Zeeland (Kronosnxs)
                 const img = /^image\//.test(lf.type)
                   ? `<img class="thumb" src="${lf.url}" alt="${escapeAttr(
                       lf.name
-                    )}">`
+                    )}" style="max-width:120px;max-height:90px;border-radius:8px;">`
                   : "";
                 const down = `<a href="${lf.url}" download="${escapeAttr(
                   lf.name
@@ -1155,6 +1281,7 @@ Author: Bob van Zeeland (Kronosnxs)
             localHTML = `<h3>Local files matched (${localFiles.length})</h3><div class="grid">${cards}</div>`;
           } else
             localHTML = `<div class="empty">No local files matched this conversation.</div>`;
+
           els.attTableWrap.className = "";
           els.attTableWrap.innerHTML = linkHTML + localHTML;
         }
@@ -1399,10 +1526,22 @@ Author: Bob van Zeeland (Kronosnxs)
         function highlightInView(terms) {
           const pres = document.querySelectorAll("#messages pre.code");
           for (const pre of pres) {
-            const raw = pre.textContent || "";
-            pre.innerHTML = highlight(escapeHTML(raw), terms, true);
+            // Only highlight plain text segments, not existing HTML (like <img>)
+            const walker = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
+            const textNodes = [];
+            while (walker.nextNode()) textNodes.push(walker.currentNode);
+            for (const node of textNodes) {
+              const frag = document.createElement("span");
+              frag.innerHTML = highlight(
+                escapeHTML(node.textContent),
+                terms,
+                true
+              );
+              node.replaceWith(...frag.childNodes);
+            }
           }
         }
+
         function highlight(s, terms, alreadyEscaped) {
           let text = s;
           if (!alreadyEscaped) text = escapeHTML(text);
@@ -1493,91 +1632,108 @@ Author: Bob van Zeeland (Kronosnxs)
         function escapeMD(s) {
           return String(s).replace(/([\\`*_{}\[\]()#+\-.!])/g, "\\$1");
         }
-       function buildRestoreManifest(conv) {
-  const data = buildExportJSON(conv);
-  const title = safeName(conv.title);
-  const lines = [];
+        function buildRestoreManifest(conv) {
+          const data = buildExportJSON(conv);
+          const title = safeName(conv.title);
+          const lines = [];
 
-  lines.push(`ChatGPT Backup Export Viewer — Restore Manifest`);
-  lines.push(`Conversation ID: ${conv.id}`);
-  lines.push(`Title: ${conv.title}`);
-  lines.push(`Date: ${data.date ? formatDate(data.date) : ""}`);
-  lines.push("");
-  lines.push("📁 Suggested Folder Structure:");
-  lines.push("ChatGPT_Archive/");
-  lines.push("├── Conversations/");
-  lines.push(`│   ├── ${title}/`);
-  lines.push("│   │   ├── conversation.json");
-  lines.push("│   │   ├── conversation.md");
-  lines.push("│   │   └── attachments/");
-  lines.push("├── Attachments/");
-  lines.push("└── Misc/");
-  lines.push("");
-  lines.push("🧩 References from chat.html / JSON:");
-  if (!data.attachments.length)
-    lines.push("- (none)");
-  else
-    for (const a of data.attachments)
-      lines.push(`- ${a.filename || "(unknown)"} | ${a.type || "file"} | ${a.href}`);
-  lines.push("");
-  lines.push("📦 Local files (imported):");
-  if (!data.localFiles.length)
-    lines.push("- (none)");
-  else
-    for (const f of data.localFiles)
-      lines.push(`- ${f.name} | ${f.type || "file"} | ${f.size} bytes | ${f.path}`);
-  lines.push("");
-  lines.push("Note: This manifest is a text reference only. It does not include binary data.");
+          lines.push(`ChatGPT Backup Export Viewer — Restore Manifest`);
+          lines.push(`Conversation ID: ${conv.id}`);
+          lines.push(`Title: ${conv.title}`);
+          lines.push(`Date: ${data.date ? formatDate(data.date) : ""}`);
+          lines.push("");
+          lines.push("📁 Suggested Folder Structure:");
+          lines.push("ChatGPT_Archive/");
+          lines.push("├── Conversations/");
+          lines.push(`│   ├── ${title}/`);
+          lines.push("│   │   ├── conversation.json");
+          lines.push("│   │   ├── conversation.md");
+          lines.push("│   │   └── attachments/");
+          lines.push("├── Attachments/");
+          lines.push("└── Misc/");
+          lines.push("");
+          lines.push("🧩 References from chat.html / JSON:");
+          if (!data.attachments.length) lines.push("- (none)");
+          else
+            for (const a of data.attachments)
+              lines.push(
+                `- ${a.filename || "(unknown)"} | ${a.type || "file"} | ${
+                  a.href
+                }`
+              );
+          lines.push("");
+          lines.push("📦 Local files (imported):");
+          if (!data.localFiles.length) lines.push("- (none)");
+          else
+            for (const f of data.localFiles)
+              lines.push(
+                `- ${f.name} | ${f.type || "file"} | ${f.size} bytes | ${
+                  f.path
+                }`
+              );
+          lines.push("");
+          lines.push(
+            "Note: This manifest is a text reference only. It does not include binary data."
+          );
 
-  return lines.join("\n");
-}
-
-
+          return lines.join("\n");
+        }
 
         // --- Export actions ---
-function downloadFile(name, text, mime = "text/plain") {
-  const blob = new Blob([text], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+        function downloadFile(name, text, mime = "text/plain") {
+          const blob = new Blob([text], { type: mime });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = name;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
 
-els.btnJSON.addEventListener("click", () => {
-  if (!currentConv) {
-    els.expInfo.textContent = "⚠️ No conversation selected.";
-    return;
-  }
-  const data = buildExportJSON(currentConv);
-  const json = JSON.stringify(data, null, 2);
-  downloadFile(safeName(currentConv.title) + ".json", json, "application/json");
-  els.expInfo.textContent = "✅ JSON export completed.";
-});
+        els.btnJSON.addEventListener("click", () => {
+          if (!currentConv) {
+            els.expInfo.textContent = "⚠️ No conversation selected.";
+            return;
+          }
+          const data = buildExportJSON(currentConv);
+          const json = JSON.stringify(data, null, 2);
+          downloadFile(
+            safeName(currentConv.title) + ".json",
+            json,
+            "application/json"
+          );
+          els.expInfo.textContent = "✅ JSON export completed.";
+        });
 
-els.btnMD.addEventListener("click", () => {
-  if (!currentConv) {
-    els.expInfo.textContent = "⚠️ No conversation selected.";
-    return;
-  }
-  const md = buildExportMarkdown(currentConv);
-  downloadFile(safeName(currentConv.title) + ".md", md, "text/markdown");
-  els.expInfo.textContent = "✅ Markdown export completed.";
-});
+        els.btnMD.addEventListener("click", () => {
+          if (!currentConv) {
+            els.expInfo.textContent = "⚠️ No conversation selected.";
+            return;
+          }
+          const md = buildExportMarkdown(currentConv);
+          downloadFile(
+            safeName(currentConv.title) + ".md",
+            md,
+            "text/markdown"
+          );
+          els.expInfo.textContent = "✅ Markdown export completed.";
+        });
 
-els.btnManifest.addEventListener("click", () => {
-  if (!currentConv) {
-    els.expInfo.textContent = "⚠️ No conversation selected.";
-    return;
-  }
-  const txt = buildRestoreManifest(currentConv);
-  downloadFile(safeName(currentConv.title) + "_manifest.txt", txt, "text/plain");
-  els.expInfo.textContent = "✅ Restore Manifest generated.";
-});
-
+        els.btnManifest.addEventListener("click", () => {
+          if (!currentConv) {
+            els.expInfo.textContent = "⚠️ No conversation selected.";
+            return;
+          }
+          const txt = buildRestoreManifest(currentConv);
+          downloadFile(
+            safeName(currentConv.title) + "_manifest.txt",
+            txt,
+            "text/plain"
+          );
+          els.expInfo.textContent = "✅ Restore Manifest generated.";
+        });
 
         // Init
         applyFilters();
