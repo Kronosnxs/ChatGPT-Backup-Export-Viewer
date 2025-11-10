@@ -64,6 +64,21 @@ ChatGPT_Export/
   - `FileReader`, `DOMParser`, `Blob`, and `URL.createObjectURL`
 - Works on all modern browsers (Chrome, Firefox, Edge, Safari)
 
+### 📝 Code Documentation
+
+The codebase is fully documented with:
+- **JSDoc comments** for all JavaScript functions, explaining parameters, return values, and functionality
+- **Inline CSS comments** describing the purpose of each style section and component
+- **HTML comments** marking major sections and explaining the structure
+
+Key code sections:
+- **CSS Variables** - Centralized theming with custom properties for colors, spacing, and borders
+- **Utility Functions** - HTML escaping, date formatting, file type detection, and ID extraction
+- **File Parsers** - Robust parsing of conversation.json and chat.html with multiple format support
+- **Rendering Engine** - Dynamic message and attachment display with inline previews
+- **Search System** - Full-text search with highlighting and snippet extraction
+- **Export Tools** - JSON, Markdown, and manifest generation
+
 ---
 
 ## 🧩 Export Types
@@ -86,16 +101,30 @@ ChatGPT_Export/
 
 ---
 
-## 📦 Metadata
+## � For Developers
+
+The single-file architecture makes it easy to understand and modify:
+
+- **Self-contained** - Everything in one HTML file (no build tools needed)
+- **Well-commented** - Every function, CSS rule, and HTML section is documented
+- **Modular structure** - Code organized into logical sections with clear responsibilities
+- **Security-first** - All user content is escaped before rendering
+
+Want to extend it? Check the inline documentation for:
+- Adding new export formats
+- Customizing the search algorithm
+- Supporting additional file types
+- Modifying the UI theme
+
+## �📦 Metadata
 
 **Project name:** ChatGPT Backup Export Viewer  
 **Version:** 0.9.5  
 **Author:** [Kronosnxs (Bob)](https://github.com/kronosnxs)  
 **License:** MIT  
-**MD5:** `ef58e0ed35eb64eae88ac3388b1dd8bc`  
-**File size:** 60 KB  
+**File size:** ~75 KB (fully commented)  
 
 ---
 
-> 🧩 “Your AI memories deserve a proper archive.”  
+> 🧩 "Your AI memories deserve a proper archive."
 > — *ChatGPT Backup Export Viewer*
