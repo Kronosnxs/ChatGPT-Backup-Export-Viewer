@@ -119,7 +119,7 @@ Want to extend it? Check the inline documentation for:
 ## �📦 Metadata
 
 **Project name:** ChatGPT Backup Export Viewer  
-**Version:** 0.9.5  
+**Version:** 0.9.6  
 **Author:** [Kronosnxs (Bob)](https://github.com/kronosnxs)  
 **License:** MIT  
 **File size:** ~75 KB (fully commented)  
