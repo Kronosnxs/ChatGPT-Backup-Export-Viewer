@@ -13,31 +13,45 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ChatGPT Backup Export Viewer — v0.9.5</title>
     <style>
+      /* ========================================
+         CSS CUSTOM PROPERTIES (CSS VARIABLES)
+         ======================================== */
+      /* Dark theme color palette for the application */
       :root {
-        --bg: #0f1320;
-        --panel: #151a2b;
-        --muted: #8aa1c1;
-        --text: #e6eefc;
-        --accent: #6aa9ff;
-        --accent-2: #7cf4e7;
-        --danger: #ff6a8a;
-        --border: #22304d;
-        --chip: #1b2340;
-        --code-bg: #0a1024;
-        --mark: #264d8b;
+        --bg: #0f1320;          /* Primary background color */
+        --panel: #151a2b;       /* Sidebar panel background */
+        --muted: #8aa1c1;       /* Muted text color for secondary information */
+        --text: #e6eefc;        /* Primary text color */
+        --accent: #6aa9ff;      /* Primary accent color for interactive elements */
+        --accent-2: #7cf4e7;    /* Secondary accent color for highlights */
+        --danger: #ff6a8a;      /* Danger/warning color */
+        --border: #22304d;      /* Border color for dividers and containers */
+        --chip: #1b2340;        /* Background color for chip/badge elements */
+        --code-bg: #0a1024;     /* Background color for code blocks */
+        --mark: #264d8b;        /* Background color for highlighted/marked text */
       }
+
+      /* ========================================
+         GLOBAL RESETS & BASE STYLES
+         ======================================== */
+      /* Apply border-box sizing to all elements for easier layout calculations */
       * {
         box-sizing: border-box;
       }
+
+      /* Ensure html and body take full viewport height */
       html,
       body {
         height: 100%;
       }
+
+      /* Body styling with system font stack and gradient background */
       body {
         margin: 0;
         font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
           Arial, "Apple Color Emoji", "Segoe UI Emoji";
         color: var(--text);
+        /* Vertical gradient background for visual depth */
         background: linear-gradient(
           180deg,
           #0b0e18 0%,
@@ -45,11 +59,18 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           #0b0e18 100%
         );
       }
+
+      /* ========================================
+         MAIN LAYOUT STRUCTURE
+         ======================================== */
+      /* Two-column grid layout: sidebar (360px) + main content (flexible) */
       .app {
         display: grid;
         grid-template-columns: 360px 1fr;
         height: 100vh;
       }
+
+      /* Sidebar panel: sticky positioning, vertical flex layout */
       aside {
         background: var(--panel);
         border-right: 1px solid var(--border);
@@ -59,30 +80,48 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         top: 0;
         min-height: 100vh;
       }
+
+      /* ========================================
+         HEADER SECTION (SIDEBAR TOP)
+         ======================================== */
+      /* App title and version display */
       header {
         padding: 16px 16px 8px;
         border-bottom: 1px solid var(--border);
       }
+
+      /* Main heading in header */
       header h1 {
         margin: 0 0 4px 0;
         font-size: 16px;
       }
+
+      /* Subtitle text (version information) */
       header .sub {
         margin: 0;
         color: var(--muted);
         font-size: 12px;
       }
+
+      /* ========================================
+         CONTROLS SECTION (FILE INPUTS & FILTERS)
+         ======================================== */
+      /* Container for all file input controls, filters, and sort options */
       .controls {
         padding: 12px 16px;
         display: grid;
         gap: 8px;
         border-bottom: 1px solid var(--border);
       }
+
+      /* Horizontal row layout for grouping controls */
       .row {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
       }
+
+      /* Button styling with gradient background */
       .btn {
         background: linear-gradient(180deg, #1e2642, #16203a);
         color: var(--text);
@@ -92,12 +131,18 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         cursor: pointer;
         font-weight: 600;
       }
+
+      /* Button hover state for interactivity feedback */
       .btn:hover {
         border-color: #2f4475;
       }
+
+      /* Hide native file input elements (replaced by styled labels) */
       input[type="file"] {
         display: none;
       }
+
+      /* Special styling for folder input (completely hidden but functional) */
       input[type="file"].folder {
         display: block;
         width: 0;
@@ -106,6 +151,8 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         position: absolute;
         pointer-events: none;
       }
+
+      /* Status chip/badge for displaying load state */
       .chip {
         border: 1px solid var(--border);
         background: var(--chip);
@@ -114,15 +161,19 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         font-size: 12px;
         color: var(--muted);
       }
+
+      /* Status color modifiers */
       .ok {
-        color: #9bf2e1;
+        color: #9bf2e1;  /* Success state (green-cyan) */
       }
       .warn {
-        color: #ffd68a;
+        color: #ffd68a;  /* Warning state (yellow) */
       }
       .danger {
-        color: var(--danger);
+        color: var(--danger);  /* Error state (red) */
       }
+
+      /* Search and filter input field styling */
       .search {
         width: 100%;
         padding: 10px 12px;
@@ -131,11 +182,18 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         background: #0f152b;
         color: var(--text);
       }
+
+      /* ========================================
+         CONVERSATION LIST (SIDEBAR)
+         ======================================== */
+      /* Scrollable container for conversation items */
       .list {
         overflow: auto;
         padding: 8px 8px 24px;
-        flex: 1;
+        flex: 1;  /* Takes remaining space in sidebar flex container */
       }
+
+      /* Individual conversation item card */
       .item {
         border: 1px solid var(--border);
         border-radius: 12px;
@@ -144,20 +202,33 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         background: linear-gradient(180deg, #121a33, #0f1630);
         cursor: pointer;
       }
+
+      /* Conversation item hover state */
       .item:hover {
         border-color: #2f4475;
       }
+
+      /* Conversation title styling */
       .title {
         font-weight: 600;
       }
+
+      /* Conversation metadata (date, ID) styling */
       .meta {
         font-size: 12px;
         color: var(--muted);
       }
+
+      /* ========================================
+         MAIN CONTENT AREA
+         ======================================== */
+      /* Primary content panel (right side of screen) */
       main {
         padding: 20px 24px;
         overflow: auto;
       }
+
+      /* Small badge/label styling for metadata display */
       .pill {
         font-size: 11px;
         padding: 2px 8px;
@@ -165,6 +236,8 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         border: 1px solid var(--border);
         color: var(--muted);
       }
+
+      /* Keyboard shortcut display styling (monospace font) */
       .kbd {
         background: #0a1024;
         border: 1px solid var(--border);
@@ -175,17 +248,26 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         font-size: 12px;
         color: var(--muted);
       }
+
+      /* Flex row with space between items (for headers) */
       .row-space {
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 12px;
       }
+
+      /* ========================================
+         TAB NAVIGATION
+         ======================================== */
+      /* Container for tab buttons */
       .tabs {
         display: flex;
         gap: 8px;
         margin: 10px 0 18px 0;
       }
+
+      /* Individual tab button styling */
       .tab {
         padding: 8px 12px;
         border: 1px solid var(--border);
@@ -193,15 +275,26 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         cursor: pointer;
         background: #0f152b;
       }
+
+      /* Active tab indicator (outline) */
       .tab.active {
         outline: 2px solid #2f4475;
       }
+
+      /* Tab view containers (hidden by default) */
       .view {
         display: none;
       }
+
+      /* Show active tab view */
       .view.active {
         display: block;
       }
+
+      /* ========================================
+         MESSAGE DISPLAY
+         ======================================== */
+      /* Individual message card styling */
       .msg {
         border: 1px solid var(--border);
         border-radius: 12px;
@@ -209,13 +302,19 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         background: #0f162d;
         margin: 10px 0;
       }
+
+      /* Message author/role label */
       .msg .who {
         font-weight: 600;
       }
+
+      /* Message timestamp display */
       .msg .when {
         font-size: 12px;
         color: var(--muted);
       }
+
+      /* Code block container with monospace font */
       pre.code {
         background: var(--code-bg);
         border: 1px solid var(--border);
@@ -227,10 +326,14 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
           "Liberation Mono", "Courier New", monospace;
       }
+
+      /* Copy button for code blocks */
       .copy {
         cursor: pointer;
         font-size: 12px;
       }
+
+      /* Empty state message styling (dashed border) */
       .empty {
         color: var(--muted);
         border: 1px dashed var(--border);
@@ -238,11 +341,18 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         border-radius: 12px;
         margin-top: 12px;
       }
+
+      /* ========================================
+         TABLE STYLING (ATTACHMENTS)
+         ======================================== */
+      /* Table container for attachment display */
       table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 8px;
       }
+
+      /* Table cell styling */
       th,
       td {
         padding: 8px 10px;
@@ -250,9 +360,13 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         text-align: left;
         vertical-align: top;
       }
+
+      /* Table header styling */
       th {
         color: var(--muted);
       }
+
+      /* Thumbnail image styling (for attachment previews) */
       .thumb {
         max-width: 200px;
         max-height: 120px;
@@ -260,26 +374,42 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         border: 1px solid var(--border);
         border-radius: 8px;
       }
+
+      /* ========================================
+         GRID LAYOUT (ATTACHMENT CARDS)
+         ======================================== */
+      /* Responsive grid for file cards */
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 12px;
       }
+
+      /* Individual file card in grid */
       .card {
         border: 1px solid var(--border);
         border-radius: 12px;
         padding: 10px;
         background: #0f162d;
       }
+
+      /* Filename display in card */
       .fname {
         font-weight: 600;
       }
+
+      /* ========================================
+         SEARCH HIGHLIGHTING
+         ======================================== */
+      /* Highlighted search term styling */
       mark {
         background: var(--mark);
         color: #dbe7ff;
         padding: 0 2px;
         border-radius: 3px;
       }
+
+      /* Search controls container */
       .sr-controls {
         display: flex;
         gap: 8px;
@@ -287,10 +417,14 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         flex-wrap: wrap;
         margin: 8px 0 4px;
       }
+
+      /* Search result count display */
       .sr-count {
         font-size: 12px;
         color: var(--muted);
       }
+
+      /* Individual search result card */
       .result {
         border: 1px solid var(--border);
         border-radius: 10px;
@@ -299,9 +433,13 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
         background: #101a34;
         cursor: pointer;
       }
+
+      /* Search result title */
       .result h4 {
         margin: 0 0 6px 0;
       }
+
+      /* Muted text utility class */
       .muted {
         color: var(--muted);
         font-size: 12px;
@@ -309,13 +447,24 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
     </style>
   </head>
   <body>
+    <!-- ========================================
+         MAIN APPLICATION CONTAINER
+         Two-column layout: sidebar + main content
+         ======================================== -->
     <div class="app">
+      <!-- ========================================
+           LEFT SIDEBAR - FILE INPUTS & CONVERSATION LIST
+           ======================================== -->
       <aside>
+        <!-- Header: Application title and version -->
         <header>
           <h1>ChatGPT Backup Export Viewer</h1>
           <p class="sub">v0.9.5 — Full-Text Search</p>
         </header>
+
+        <!-- Controls: File upload inputs, filters, and sort options -->
         <div class="controls">
+          <!-- JSON file upload -->
           <div class="row">
             <label class="btn" for="fileJSON">📥 conversation.json</label>
             <input id="fileJSON" type="file" accept=".json,application/json" />
@@ -323,6 +472,8 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
               >JSON: <span class="warn">not loaded</span></span
             >
           </div>
+
+          <!-- HTML file upload -->
           <div class="row">
             <label class="btn" for="fileHTML">📄 chat.html</label>
             <input id="fileHTML" type="file" accept=".html,text/html" />
@@ -330,6 +481,8 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
               >HTML: <span class="warn">not loaded</span></span
             >
           </div>
+
+          <!-- Folder/directory upload for attachments -->
           <div class="row">
             <label class="btn" for="folderBtn"
               >📁 Import attachments folder</label
@@ -346,6 +499,8 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
               >Files: <span class="warn">0</span></span
             >
           </div>
+
+          <!-- Filter input: Search/filter conversations by title or ID -->
           <div class="row">
             <input
               id="filterSidebar"
@@ -353,6 +508,8 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
               placeholder="Filter sidebar by title/ID…"
             />
           </div>
+
+          <!-- Sort dropdown: Sort conversations by date or title -->
           <div class="row">
             <select id="sort" class="search" title="Sort by">
               <option value="date_desc">Sort: Date ↓</option>
@@ -361,6 +518,8 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
               <option value="title_desc">Sort: Title Z→A</option>
             </select>
           </div>
+
+          <!-- Keyboard shortcuts display -->
           <div class="row">
             <span class="chip"
               >Shortcuts: <span class="kbd">Ctrl/Cmd+O</span> JSON,
@@ -368,15 +527,22 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
             >
           </div>
         </div>
+
+        <!-- Conversation list container (populated dynamically by JavaScript) -->
         <div id="list" class="list" aria-live="polite"></div>
       </aside>
 
+      <!-- ========================================
+           MAIN CONTENT AREA - MESSAGE VIEWER & TABS
+           ======================================== -->
       <main>
+        <!-- Header with conversation title and info -->
         <div class="row-space">
           <h2 id="viewTitle">Viewer</h2>
           <div id="viewInfo" class="pill">No conversation selected</div>
         </div>
 
+        <!-- Tab navigation for different views -->
         <div class="tabs">
           <div id="tabMsg" class="tab active">Messages</div>
           <div id="tabAtt" class="tab">Attachments</div>
@@ -384,6 +550,11 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           <div id="tabSearch" class="tab">Search Results</div>
         </div>
 
+        <!-- ========================================
+             TAB CONTENT SECTIONS
+             ======================================== -->
+
+        <!-- Messages View: Displays conversation messages -->
         <section id="viewMessages" class="view active">
           <div id="messages"></div>
           <div id="placeholder" class="empty">
@@ -394,6 +565,7 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           </div>
         </section>
 
+        <!-- Attachments View: Displays referenced files and local imports -->
         <section id="viewAttachments" class="view">
           <div class="hint">
             Merges references parsed from chat.html/JSON with local files you
@@ -404,6 +576,7 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           <div id="unattached" class="empty">No local files imported.</div>
         </section>
 
+        <!-- Export View: Export options for current conversation -->
         <section id="viewExport" class="view">
           <div class="hint">
             Export the current conversation as JSON or Markdown, and generate a
@@ -421,6 +594,7 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           </div>
         </section>
 
+        <!-- Search View: Full-text search across all conversations -->
         <section id="viewSearch" class="view">
           <div class="sr-controls">
             <input
@@ -440,18 +614,44 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
             <button id="btnClear" class="btn">Clear</button>
             <span id="srCount" class="sr-count"></span>
           </div>
+          <!-- Search results populated dynamically -->
           <div id="results"></div>
         </section>
       </main>
     </div>
 
+    <!-- ========================================
+         JAVASCRIPT - APPLICATION LOGIC
+         ======================================== -->
     <script>
+      /**
+       * Main application IIFE (Immediately Invoked Function Expression)
+       * Encapsulates all application logic to avoid global scope pollution
+       */
       (function () {
         "use strict";
+
+        /**
+         * DOM query selector shortcuts
+         * @param {string} sel - CSS selector
+         * @param {Element|Document} root - Root element to search from
+         * @returns {Element|null} First matching element
+         */
         const $ = (sel, root = document) => root.querySelector(sel);
+
+        /**
+         * DOM query selector for multiple elements
+         * @param {string} sel - CSS selector
+         * @param {Element|Document} root - Root element to search from
+         * @returns {Array<Element>} Array of matching elements
+         */
         const $$ = (sel, root = document) =>
           Array.from(root.querySelectorAll(sel));
 
+        /**
+         * Cache of DOM element references for performance
+         * All UI elements are stored here to avoid repeated DOM queries
+         */
         const els = {
           fileJSON: $("#fileJSON"),
           fileHTML: $("#fileHTML"),
@@ -488,27 +688,67 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           srCount: $("#srCount"),
         };
 
-        // Data
+        /* ========================================
+           APPLICATION STATE
+           ======================================== */
+        /** @type {Array<Object>} Array of all loaded conversations */
         let conversations = [];
+
+        /** @type {Object<string, Array>} Messages indexed by conversation ID from JSON */
         let messagesById = {};
+
+        /** @type {Object<string, Array>} Messages indexed by conversation ID from HTML */
         let htmlMessagesById = {};
+
+        /** @type {Object<string, Array>} Attachments indexed by conversation ID */
         let attachmentsById = {};
+
+        /** @type {Object<string, Object>} Local files indexed by basename */
         let localByBase = {};
+
+        /** @type {Object<string, Array<string>>} Local file basenames mapped to conversation IDs */
         let localMapByConv = {};
+
+        /** @type {Array<Object>} Filtered conversations based on search/sort */
         let filtered = [];
+
+        /** @type {Object|null} Currently selected/displayed conversation */
         let currentConv = null;
+
+        /** @type {Array<string>} Search terms for highlighting */
         let highlightTerms = [];
 
-        // Utils
+        /* ========================================
+           UTILITY FUNCTIONS
+           ======================================== */
+
+        /**
+         * Updates a status chip element with text and status color
+         * @param {HTMLElement} el - The chip element to update
+         * @param {boolean} ok - Whether the status is successful (true) or error (false)
+         * @param {string} [text] - Optional text to display (defaults to "loaded" or "not loaded")
+         */
         function setChip(el, ok, text) {
           el.innerHTML = escapeHTML(text || (ok ? "loaded" : "not loaded"));
           el.className = "chip " + (ok ? "ok" : "danger");
         }
+
+        /**
+         * Extracts the filename from a file path
+         * @param {string} p - File path (can use forward or back slashes)
+         * @returns {string} Filename only, without directory path
+         */
         function basename(p) {
           if (!p) return "";
           const parts = String(p).split(/[\\/]/).filter(Boolean);
           return parts.pop() || "";
         }
+
+        /**
+         * Escapes HTML special characters to prevent XSS attacks
+         * @param {string} s - String to escape
+         * @returns {string} HTML-safe string
+         */
         function escapeHTML(s) {
           return String(s).replace(
             /[&<>"']/g,
@@ -522,20 +762,39 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
               }[ch])
           );
         }
+
+        /**
+         * Escapes double quotes for HTML attribute values
+         * @param {string} s - String to escape
+         * @returns {string} Attribute-safe string
+         */
         function escapeAttr(s) {
           return String(s).replace(/"/g, "&quot;");
         }
+
+        /**
+         * Sanitizes a string to be used as a safe filename
+         * @param {string} s - String to sanitize
+         * @returns {string} Safe filename (max 80 chars, alphanumeric and hyphens/underscores)
+         */
         function safeName(s) {
           return String(s || "conversation")
             .replace(/[^\w\-]+/g, "_")
             .slice(0, 80);
         }
+
+        /**
+         * Converts various timestamp formats to Unix timestamp (seconds)
+         * Handles milliseconds, strings, and various numeric formats
+         * @param {number|string|null|undefined} v - Timestamp value to convert
+         * @returns {number} Unix timestamp in seconds, or 0 if invalid
+         */
         function toTs(v) {
           if (v === null || v === undefined) return 0;
           if (typeof v === "number") {
-            if (v > 1e12) return Math.floor(v / 1000);
-            if (v > 1e9) return Math.floor(v);
-            if (v > 1e8) return Math.floor(v);
+            if (v > 1e12) return Math.floor(v / 1000); // Milliseconds to seconds
+            if (v > 1e9) return Math.floor(v); // Already in seconds
+            if (v > 1e8) return Math.floor(v); // Ambiguous range
             return 0;
           }
           if (typeof v === "string") {
@@ -547,6 +806,12 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
           return 0;
         }
+
+        /**
+         * Formats Unix timestamp as human-readable date string
+         * @param {number} sec - Unix timestamp in seconds
+         * @returns {string} Formatted date string (YYYY-MM-DD HH:mm) or empty string
+         */
         function formatDate(sec) {
           try {
             if (!sec) return "";
@@ -561,6 +826,13 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
             return "";
           }
         }
+
+        /**
+         * Guesses MIME type based on file extension
+         * @param {string} href - File URL or path
+         * @param {string} name - Filename
+         * @returns {string} MIME type string
+         */
         function guessType(href, name) {
           const s = (href || name || "").toLowerCase();
           if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)(\?|$)/.test(s))
@@ -574,6 +846,13 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
             return "text/plain";
           return "application/octet-stream";
         }
+
+        /**
+         * Normalizes file reference strings by removing schemes, queries, and ensuring extensions
+         * Handles ChatGPT's file_XXXXX format and various URL schemes
+         * @param {string} ref - File reference string to normalize
+         * @returns {string} Normalized lowercase filename
+         */
         function normalizeFileRef(ref) {
           if (!ref) return "";
           let base = String(ref).trim();
@@ -587,6 +866,11 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           return basename(base).toLowerCase();
         }
 
+        /**
+         * Extracts conversation ID from various object property formats
+         * @param {Object} o - Conversation object
+         * @returns {string} Conversation ID or empty string
+         */
         function pickId(o) {
           return String(
             o?.id ||
@@ -598,11 +882,23 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
               ""
           ).trim();
         }
+
+        /**
+         * Extracts conversation title from various object property formats
+         * @param {Object} o - Conversation object
+         * @returns {string} Conversation title or "(untitled)"
+         */
         function pickTitle(o) {
           let t = o?.title || o?.name || o?.topic || o?.subject || "";
           if (!t && typeof o?.mapping?.title === "string") t = o.mapping.title;
           return String(t || "(untitled)").trim();
         }
+
+        /**
+         * Extracts timestamp from various object property formats
+         * @param {Object} o - Conversation object
+         * @returns {number} Unix timestamp in seconds, or 0 if not found
+         */
         function pickDate(o) {
           const cand = [
             o?.create_time,
@@ -620,6 +916,14 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           return 0;
         }
 
+        /* ========================================
+           TAB NAVIGATION
+           ======================================== */
+
+        /**
+         * Switches active tab view in the main content area
+         * @param {string} key - Tab key: "msg", "att", "exp", or "search"
+         */
         function activateTab(key) {
           [els.tabMsg, els.tabAtt, els.tabExp, els.tabSearch].forEach((x) =>
             x.classList.remove("active")
@@ -648,7 +952,9 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
         }
 
-        // Events
+        /* ========================================
+           EVENT LISTENERS
+           ======================================== */
         $("#tabMsg").addEventListener("click", () => activateTab("msg"));
         $("#tabAtt").addEventListener("click", () => activateTab("att"));
         $("#tabExp").addEventListener("click", () => activateTab("exp"));
@@ -689,10 +995,16 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           highlightTerms = [];
         });
 
-        // Drag&drop
+        /* ========================================
+           DRAG & DROP SUPPORT
+           ======================================== */
+
+        // Prevent default drag behavior
         document.addEventListener("dragover", (e) => {
           e.preventDefault();
         });
+
+        // Handle dropped files
         document.addEventListener("drop", (e) => {
           e.preventDefault();
           const files = [...(e.dataTransfer?.files || [])];
@@ -705,9 +1017,19 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
         });
 
-        // Parsing helpers
+        /* ========================================
+           FILE PARSING HELPERS
+           ======================================== */
+
+        /**
+         * Recursively searches for file references (file_XXXXX format) in nested objects
+         * @param {*} node - Object, array, string, or primitive to search
+         * @param {Set<string>} [acc=new Set()] - Accumulator set for found file references
+         * @param {number} [depth=0] - Current recursion depth (max 6)
+         * @returns {Set<string>} Set of file reference strings found
+         */
         function deepFindFileRefs(node, acc = new Set(), depth = 0) {
-          if (depth > 6) return acc;
+          if (depth > 6) return acc; // Prevent infinite recursion
           if (node === null || node === undefined) return acc;
           if (typeof node === "string") {
             const m = node.match(/file_[A-Za-z0-9._-]+/g);
@@ -726,6 +1048,12 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
           return acc;
         }
+
+        /**
+         * Traverses up the DOM tree to find a conversation ID attribute
+         * @param {HTMLElement} node - Starting DOM element
+         * @returns {string} Conversation ID or empty string
+         */
         function findConversationId(node) {
           let el = node;
           while (el) {
@@ -735,6 +1063,12 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
           return "";
         }
+
+        /**
+         * Searches for a preceding script tag with JSON containing a conversation ID
+         * @param {HTMLElement} el - Starting DOM element
+         * @returns {Object|null} Object with cid property, or null if not found
+         */
         function findPrevScriptWithId(el) {
           let cur = el;
           for (let i = 0; i < 30 && cur; i++) {
@@ -754,6 +1088,15 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           return null;
         }
 
+        /* ========================================
+           FILE LOADING FUNCTIONS
+           ======================================== */
+
+        /**
+         * Loads and parses a conversation.json file
+         * Updates the global conversations and messagesById objects
+         * @param {File} file - The JSON file to load
+         */
         function loadJSONFile(file) {
           const reader = new FileReader();
           reader.onload = () => {
@@ -772,6 +1115,12 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           };
           reader.readAsText(file);
         }
+
+        /**
+         * Loads and parses a chat.html file exported from ChatGPT
+         * Extracts messages and attachment references
+         * @param {File} file - The HTML file to load
+         */
         function loadHTMLFile(file) {
           const reader = new FileReader();
           reader.onload = () => {
@@ -793,6 +1142,13 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           };
           reader.readAsText(file);
         }
+
+        /**
+         * Parses HTML content to extract messages and file attachments
+         * Looks for embedded JSON scripts and HTML elements with file references
+         * @param {string} text - Raw HTML content
+         * @returns {Object} Object with messages and attachments properties
+         */
         function parseChatHTML(text) {
           const out = { messages: {}, attachments: {} };
           try {
@@ -908,6 +1264,13 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
           return out;
         }
+
+        /**
+         * Normalizes conversation data from various JSON export formats
+         * Handles different array structures (conversations, items, threads, etc.)
+         * @param {Object|Array} data - Raw JSON data from conversation.json
+         * @returns {Object} Object with items array and messagesById object
+         */
         function normalizeConversations(data) {
           const candidates = [];
           if (Array.isArray(data)) candidates.push(data);
@@ -940,6 +1303,13 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
           return { items, messagesById: msgs };
         }
+
+        /**
+         * Extracts messages from various nested object structures
+         * Handles messages arrays, mapping objects, and thread structures
+         * @param {Object} obj - Conversation object to extract messages from
+         * @returns {Array<Object>} Array of normalized message objects
+         */
         function extractInlineMessages(obj) {
           const out = [];
           if (Array.isArray(obj.messages)) {
@@ -966,6 +1336,12 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           return out;
         }
 
+        /**
+         * Recursively extracts text content from nested message structures
+         * Handles strings, arrays, and objects with various text properties
+         * @param {*} m - Message content (can be string, array, object, or nested structure)
+         * @returns {string} Extracted text content
+         */
         function extractTextContent(m) {
           if (!m) return "";
           if (typeof m === "string") return m;
@@ -985,6 +1361,11 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           return "";
         }
 
+        /**
+         * Normalizes a message object to standard format
+         * @param {Object} m - Raw message object
+         * @returns {Object|null} Normalized message with id, author, role, create_time, content
+         */
         function shapeMessage(m) {
           try {
             const id = String(m.id || m.message_id || m.uuid || "").trim();
@@ -1013,7 +1394,32 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
         }
 
-        // Sidebar
+        /**
+         * Normalizes message from mapping structure (chat.html format)
+         * @param {Object} m - Raw message from mapping object
+         * @returns {Object|null} Normalized message or null if invalid
+         */
+        function shapeMappingMessage(m) {
+          try {
+            const id = String(m.id || m.message_id || "").trim();
+            const role = m.author?.role || "unknown";
+            const author = m.author?.name || role;
+            const create_time = toTs(m.create_time || 0);
+            const content = extractTextContent(m.content);
+            return { id, author, role, create_time, content };
+          } catch {
+            return null;
+          }
+        }
+
+        /* ========================================
+           SIDEBAR - CONVERSATION LIST & FILTERING
+           ======================================== */
+
+        /**
+         * Applies search filter and sort order to conversation list
+         * Updates the filtered array and re-renders the sidebar
+         */
         function applyFilters() {
           const q = els.filterSidebar.value.trim().toLowerCase();
           const mode = els.sort.value;
@@ -1035,6 +1441,11 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           filtered = arr;
           renderList();
         }
+
+        /**
+         * Renders the filtered conversation list in the sidebar
+         * Creates clickable cards for each conversation
+         */
         function renderList() {
           if (filtered.length === 0) {
             els.list.innerHTML =
@@ -1057,10 +1468,25 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           els.list.innerHTML = "";
           els.list.appendChild(frag);
         }
+
+        /**
+         * Truncates long conversation IDs for display
+         * @param {string} id - Full conversation ID
+         * @returns {string} Truncated ID with ellipsis if too long
+         */
         function shortId(id) {
           return id.length > 24 ? id.slice(0, 12) + "…" + id.slice(-8) : id;
         }
 
+        /* ========================================
+           CONVERSATION DISPLAY
+           ======================================== */
+
+        /**
+         * Displays a selected conversation in the main content area
+         * Merges messages from JSON and HTML sources, renders messages and attachments
+         * @param {Object} conv - Conversation object to display
+         */
         function showConversation(conv) {
           currentConv = conv;
           els.viewTitle.textContent = conv.title;
@@ -1118,6 +1544,12 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
             highlightInView(highlightTerms);
           }
         }
+
+        /**
+         * Renders message list in the main content area
+         * Creates message cards with author, timestamp, content, and inline file previews
+         * @param {Array<Object>} list - Array of normalized message objects
+         */
         function renderMessages(list) {
           const frag = document.createDocumentFragment();
           if (!list.length) {
@@ -1209,6 +1641,11 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           els.messages.appendChild(frag);
         }
 
+        /**
+         * Renders attachment tables and local file grids for a conversation
+         * Displays referenced files from HTML/JSON and locally imported files
+         * @param {string} cid - Conversation ID
+         */
         function renderAttachments(cid) {
           const links = (attachmentsById[cid] || []).slice();
           const localBases = localMapByConv[cid] || [];
@@ -1288,6 +1725,11 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           els.attTableWrap.innerHTML = linkHTML + localHTML;
         }
 
+        /**
+         * Imports local attachment files and creates Blob URLs for offline preview
+         * Filters for ChatGPT export files (file_XXXXX) and known file extensions
+         * @param {Array<File>} files - Array of File objects to import
+         */
         function importLocalFiles(files) {
           for (const f of files) {
             const base = basename(f.name);
@@ -1316,6 +1758,11 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           );
           rebuildLocalMap();
         }
+
+        /**
+         * Rebuilds the mapping between local files and conversations
+         * Matches imported files to conversation attachments by filename
+         */
         function rebuildLocalMap() {
           localMapByConv = {};
           for (const cid in attachmentsById) {
@@ -1336,6 +1783,11 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
           updateUnattached();
         }
+
+        /**
+         * Updates the display of unattached local files (files not linked to any conversation)
+         * Renders a grid of file cards for orphaned files
+         */
         function updateUnattached() {
           const attached = new Set(Object.values(localMapByConv).flat());
           const unatt = Object.keys(localByBase).filter(
@@ -1376,7 +1828,15 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           el.appendChild(grid);
         }
 
-        // Search
+        /* ========================================
+           SEARCH FUNCTIONALITY
+           ======================================== */
+
+        /**
+         * Executes full-text search across all loaded conversations
+         * Searches messages and optionally attachments for all search terms
+         * Groups results by conversation and renders them
+         */
         function runSearch() {
           const q = els.searchInput.value.trim();
           activateTab("search");
@@ -1505,10 +1965,23 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           els.results.innerHTML = "";
           els.results.appendChild(frag);
         }
+
+        /**
+         * Adds a temporary visual pulse effect to a DOM element
+         * @param {HTMLElement} node - Element to pulse
+         */
         function pulse(node) {
           node.style.outline = "2px solid var(--accent-2)";
           setTimeout(() => (node.style.outline = ""), 800);
         }
+
+        /**
+         * Creates a text snippet with highlighted search terms
+         * Extracts text around the first matching term
+         * @param {string} text - Full text to create snippet from
+         * @param {Array<string>} terms - Search terms to highlight
+         * @returns {string} HTML snippet with highlighted terms
+         */
         function makeSnippet(text, terms) {
           const lower = text.toLowerCase();
           let idx = -1;
@@ -1525,6 +1998,12 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           const chunk = text.slice(start, end);
           return highlight(chunk, terms);
         }
+
+        /**
+         * Highlights search terms within the displayed messages
+         * Uses TreeWalker to only highlight text nodes, preserving existing HTML
+         * @param {Array<string>} terms - Search terms to highlight
+         */
         function highlightInView(terms) {
           const pres = document.querySelectorAll("#messages pre.code");
           for (const pre of pres) {
@@ -1544,6 +2023,13 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
         }
 
+        /**
+         * Wraps search terms in <mark> tags for highlighting
+         * @param {string} s - Text to highlight
+         * @param {Array<string>} terms - Terms to highlight
+         * @param {boolean} [alreadyEscaped=false] - Whether text is already HTML-escaped
+         * @returns {string} HTML with highlighted terms
+         */
         function highlight(s, terms, alreadyEscaped) {
           let text = s;
           if (!alreadyEscaped) text = escapeHTML(text);
@@ -1553,11 +2039,26 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           }
           return text;
         }
+
+        /**
+         * Escapes special regex characters in a string
+         * @param {string} s - String to escape
+         * @returns {string} Regex-safe string
+         */
         function escapeRegExp(s) {
           return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         }
 
-        // Export
+        /* ========================================
+           EXPORT FUNCTIONALITY
+           ======================================== */
+
+        /**
+         * Builds a complete JSON export object for a conversation
+         * Merges messages from JSON and HTML sources, includes attachments and local files
+         * @param {Object} conv - Conversation object to export
+         * @returns {Object} Export object with all conversation data
+         */
         function buildExportJSON(conv) {
           const msgs = (messagesById[conv.id] || []).concat(
             htmlMessagesById[conv.id] || []
@@ -1591,6 +2092,13 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
             })),
           };
         }
+
+        /**
+         * Builds a Markdown export of a conversation
+         * Includes headers, messages, attachments, and local file listings
+         * @param {Object} conv - Conversation object to export
+         * @returns {string} Markdown-formatted conversation
+         */
         function buildExportMarkdown(conv) {
           const data = buildExportJSON(conv);
           const lines = [];
@@ -1631,9 +2139,22 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           lines.push("");
           return lines.join("\n");
         }
+
+        /**
+         * Escapes Markdown special characters
+         * @param {string} s - String to escape
+         * @returns {string} Markdown-safe string
+         */
         function escapeMD(s) {
           return String(s).replace(/([\\`*_{}\[\]()#+\-.!])/g, "\\$1");
         }
+
+        /**
+         * Builds a restore manifest text file for a conversation
+         * Includes folder structure suggestion and file listings
+         * @param {Object} conv - Conversation object
+         * @returns {string} Text manifest content
+         */
         function buildRestoreManifest(conv) {
           const data = buildExportJSON(conv);
           const title = safeName(conv.title);
@@ -1681,7 +2202,12 @@ License URL: https://github.com/Kronosnxs/ChatGPT-Backup-Export-Viewer/blob/main
           return lines.join("\n");
         }
 
-        // --- Export actions ---
+        /**
+         * Triggers a browser download of a text file
+         * @param {string} name - Filename for download
+         * @param {string} text - Content to download
+         * @param {string} [mime="text/plain"] - MIME type
+         */
         function downloadFile(name, text, mime = "text/plain") {
           const blob = new Blob([text], { type: mime });
           const url = URL.createObjectURL(blob);
